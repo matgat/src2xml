@@ -1,0 +1,751 @@
+<?xml version="1.0" encoding="utf-8"?>
+<src2xml-config version="0.42">
+<!-- You may freely edit this file. What you should know...
+
+  *) A <lang> is a set of highlighting rules <region>.
+     Advice: take care of declared regions sequence,
+     what is checked first has obviously the precedence
+     on the following.
+     To add a new lang copy and paste an existing one,
+     associate it to a particular file extension setting
+     the id, then possibly add extension aliases (see below)
+  *) A region is delimited by a starting and ending detectors,
+     both are related to a particular occurrence in source
+     file. The occurrence of <start> is included in the region
+     itself by default, while <end> is excluded, so you should
+     specify <start opts="excluded"> or <end opts="included">
+     otherwise
+  *) About <region> attributes:
+         .use contains="" if can contain other regions (pay
+          attention to these nested regions sequence) or langs
+         .use start-tag/end-tag to override default exported tags
+         .use type="subregion" to specify that a region must have
+          a parent, so ignoring it in the root level
+  *) When omitting <end>, the <region> ends with its <start>
+     detector occurrence
+  *) When choosing a region start detector, keep in mind the
+     preceding region detectors have already eaten!
+     For example, it does not make sense to check to be at start
+     of line if the preceding region is a line comment
+  *) 'Start' detectors of 'keyword' type should be used without
+     'end' detectors ('indentifier end' default)
+  *) The detectors of type="regex" are very powerful although
+     slow down parsing time; if you know what you're doing, use them.
+     Don't bother with start conditions (\b), since a region
+     is checked only when another one ends
+     Remember:
+     a(?=b)   positive lookahead
+     a(?!b)   negative lookahead
+     (?<=a)b  positive lookbehind (!)
+     (?<!a)b  negative lookbehind (!)
+     Some regular expression examples
+      <[^<>]+>       a xml tag
+      //.*$          an entire line starting with '//'
+      \*.*?\*        a c-style multi-line comment
+      "[^"\r\n]*"    a single-line quoted string without inner quote character
+      "[^"\\\r\n]*(?:\\.[^"\\\r\n]*)*"    a single-line quoted string with escaped quote character
+      "[^"\\]*(?:\\.[^"\\]*)*"            a multiple lines quoted string
+      \d+                    a positive integer number
+      [-+]?\b\d+\b           an integer number with sign
+      0[xX][0-9a-fA-F]+  a c-style hexadecimal number
+      (([0-9]+)?\.)?[0-9]+                      a floating point number with optional integer part
+      ([0-9]+\.([0-9]+)?|\.[0-9]+)              a (strict) floating point number
+      (([0-9]+)?\.)?[0-9]+([eE][-+]?[0-9]+)?    a number in scientific notation
+      (key1|key2|key3|...)                      a set of keywords
+-->
+  <!-- Handy common definitions -->
+  <common>
+    <!-- Input extension aliases (keep lowercase) -->
+    <aliases id="cpp">.c .cc .cxx .h .hh .hpp</aliases>
+    <aliases id="xml">.xsl .svg .dtd</aliases>
+    <aliases id="html">.htm .xhtml .php .wsf</aliases>
+    <aliases id="tex">.ltx .sty .latex</aliases>
+    <aliases id="bat">.cmd</aliases>
+
+    <!-- Exporter options -->
+    <exporter root-start-tag="&lt;div xmlns=&apos;http://www.w3.org/1999/xhtml&apos; class=&apos;(id)&apos;&gt;"
+              root-end-tag="&lt;/div&gt;"
+              root-id-suffix="sourcecode" id-separator="-"
+              start-tag="&lt;span class=&apos;(id)&apos;&gt;"
+              end-tag="&lt;/span&gt;"> <!-- You may also specify them in each region tag -->
+        <!-- Replaced strings in source text -->
+        (&lt;,&amp;lt;) (&gt;,&amp;gt;) (&quot;,&amp;quot;) (&apos;,&amp;apos;) (&amp;,&amp;amp;)
+    </exporter>
+
+    <!-- Reusable chargroups -->
+    <chargroup id="spacing">\u0000â€¦\u0020</chargroup>
+    <chargroup id="symbol">!â€¦/ :â€¦@ [â€¦\u0060 {â€¦Â¿ Ã·</chargroup>
+    <chargroup id="delimiter">\&quot; \&apos; (â€¦) [ ] {â€¦} :â€¦; , .</chargroup>
+    <chargroup id="operator">*â€¦+ - / &lt;â€¦&gt; ! ^ %â€¦&amp;</chargroup>
+    <chargroup id="numeric-constant-start">0â€¦9</chargroup>
+    <chargroup id="numeric-constant-end" opts="not">0â€¦9 - + E e L l U u F f</chargroup>
+    <chargroup id="identifier-start">aâ€¦z Aâ€¦Z _</chargroup>
+    <chargroup id="identifier-end" opts="not">aâ€¦z Aâ€¦Z _ 0â€¦9</chargroup>
+    <chargroup id="xml-identifier-end" opts="not">aâ€¦z Aâ€¦Z _ -</chargroup>
+    <chargroup id="keyword-end" opts="not">aâ€¦z Aâ€¦Z _ 0â€¦9</chargroup>
+  </common>
+
+  <!-- Highlight rules (associated to input file extension) -->
+
+  <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+  <!--                         C++ sources                          -->
+  <lang id="cpp">
+
+    <region id="keyword">
+      <start type="keyword">
+            bool char void int long short float double const
+            signed unsigned wchar_t true false this inline
+            static extern auto register volatile explicit
+            mutable friend if else for while do switch
+            return break continue goto class enum struct
+            union virtual namespace private protected public
+            template typedef typeid typename operator new
+            delete throw try catch using sizeof
+            dynamic_cast const_cast reinterpret_cast static_cast
+            asm export default compl and bitand and_eq bitor or
+            or_eq not not_eq xor xor_eq
+        </start>
+    </region>
+    
+    <!--<region id="conditional" contains="identifier,number,escape-sequence,multiline-comment,singleline-comment,double-quoted,single-quoted">
+      <start type="keyword">if for while</start>
+      <end type="char" opts="included">)</end>
+    </region> -->
+    
+    <!-- This is useful to discriminate labels -->
+    <region id="case" contains="identifier,number">
+      <start type="string">case</start>
+      <end type="char">:</end>
+    </region>
+
+    <region id="extkeyword">
+      <start type="keyword">
+            __fastcall __property __closure __published
+            __automated __classid __declspec String
+            __asm __based __cdecl __except __finally
+            __int8 __int16 __int32 __int64 __leave
+            __stdcall __try
+        </start>
+      <end type="char"><chargroup id="keyword-end"/></end>
+    </region>
+
+    <region id="namespace">
+      <start type="regex">\w+::</start>
+    </region>
+
+    <region id="label">
+      <start type="regex">\w+:</start>
+    </region>
+
+    <region id="identifier">
+      <start type="char"><chargroup id="identifier-start"/></start>
+      <end type="char"><chargroup id="identifier-end"/></end>
+    </region>
+
+    <region id="number">
+        <!-- Well, could be more precise with a regex
+      <start type="regex">(((0[xXbBoO])?[0-9a-fA-F]+[uUlL]?)|(([0-9]+)?\.)?[0-9]+([eE][-+]?[0-9]+)?)</start>
+        -->
+      <start type="char"><chargroup id="numeric-constant-start"/></start>
+      <end type="char"><chargroup id="numeric-constant-end"/></end>
+    </region>
+
+    <region id="multiline-comment">
+      <start type="string">/*</start>
+      <end type="string" opts="included">*/</end>
+    </region>
+
+    <region id="singleline-comment">
+      <start type="string">//</start>
+      <end type="regex">\r?\n</end>
+    </region>
+
+    <region id="directive" contains="multiline-comment,singleline-comment">
+      <start type="char">#</start>
+      <end type="regex">\r?\n</end>
+    </region>
+
+    <!--<region id="escape-sequence-single">
+      <start type="char">\</start>
+      <end type="charnum">1</end>
+    </region> -->
+
+    <region id="escape-sequence">
+      <start type="regex">\\u([0-9a-fA-F]{4})|\\x([0-9a-fA-F]{2})|\\([0-7]{3})|\\.</start>
+    </region>
+
+    <region id="double-quoted" contains="escape-sequence,single-quoted">
+      <start type="char">\&quot;</start>
+      <end type="char" opts="included">\&quot;</end>
+    </region>
+
+    <region id="single-quoted" contains="escape-sequence,double-quoted">
+      <start type="char">\&apos;</start>
+      <end type="char" opts="included">\&apos;</end>
+    </region>
+  </lang>
+
+
+  <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+  <!--                         Java sources                         -->
+  <lang id="java">
+
+    <region id="directive" contains="identifier,multiline-comment,singleline-comment">
+      <start type="regex">(package|import)</start>
+      <end type="regex">\r?\n</end>
+    </region>
+
+    <region id="keyword">
+      <start type="keyword">
+            abstract assert boolean break byte case catch char
+            class const continue default do double else enum
+            extends final finally float for goto if implements
+            import instanceof int interface long native new
+            package private protected public return short
+            static strictfp super switch synchronized this
+            throw throws transient try void volatile while
+        </start>
+      <end type="char"><chargroup id="keyword-end"/></end>
+    </region>
+
+    <region id="extkeyword">
+      <start type="keyword">
+            System Character
+            String StringBuffer StringBuilder
+            Collection List Set Map null
+        </start>
+      <end type="char"><chargroup id="keyword-end"/></end>
+    </region>
+
+    <region id="identifier">
+      <start type="char"><chargroup id="identifier-start"/></start>
+      <end type="char"><chargroup id="identifier-end"/></end>
+    </region>
+
+    <region id="number">
+        <!-- Well, could be more precise with a regex -->
+      <start type="char"><chargroup id="numeric-constant-start"/></start>
+      <end type="char"><chargroup id="numeric-constant-end"/></end>
+    </region>
+
+    <region id="multiline-comment">
+      <start type="string">/*</start>
+      <end type="string" opts="included">*/</end>
+    </region>
+
+    <region id="singleline-comment">
+      <start type="string">//</start>
+      <end type="regex">\r?\n</end>
+    </region>
+
+    <region id="annotation">
+      <start type="char">@</start>
+      <end type="char"><chargroup id="spacing"/></end>
+    </region>
+
+    <region id="escape-sequence">
+      <start type="regex">\\u([0-9a-fA-F]{4})|\\.</start>
+    </region>
+
+    <region id="double-quoted" contains="escape-sequence,single-quoted">
+      <start type="char">\&quot;</start>
+      <end type="char" opts="included">\&quot;</end>
+    </region>
+
+    <region id="single-quoted" contains="escape-sequence,double-quoted">
+      <start type="char">\&apos;</start>
+      <end type="char" opts="included">\&apos;</end>
+    </region>
+  </lang>
+
+
+  <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+  <!--                      Javascript sources                      -->
+  <lang id="js">
+
+    <region id="directive" contains="identifier,multiline-comment,singleline-comment">
+      <start type="regex">(package|import|export)</start>
+      <end type="regex">\r?\n</end>
+    </region>
+
+    <region id="keyword">
+      <start type="keyword">
+            abstract as boolean break byte case catch char class
+            continue const debugger default delete do double else
+            enum export extends false final finally float for
+            function goto if implements import in instanceof int
+            interface is long namespace native new null package
+            private protected public return short static super
+            switch synchronized this throw throws transient true
+            try typeof undefined use var void volatile while with
+        </start>
+      <end type="char"><chargroup id="keyword-end"/></end>
+    </region>
+    
+    <region id="extkeyword">
+      <start type="keyword">
+            alert Anchor Area arguments Array assign blur Boolean Button
+            callee caller captureEvents Checkbox clearInterval clearTimeout
+            close closed confirm constructor Date defaultStatus document
+            Document echo Element Error escape eval exec FileUpload find focus
+            Form Frame frames Function getClass Hidden history History home Image
+            Infinity innerHeight innerWidth isFinite isNan java JavaArray JavaClass
+            JavaObject JavaPackage length Link location Location locationbar
+            match Math menubar MimeType moveBy moveTo name NaN navigate navigator
+            Navigator netscape Number Object onBlur onError onFocus onLoad
+            onUnload open opener Option outerHeight outerWidth Packages
+            pageXoffset pageYoffset parent parseFloat parseInt Password
+            personalbar Plugin pop print prompt prototype push Radio ref RegExp
+            releaseEvents replace Reset resizeBy resizeTo routeEvent scroll
+            scrollbars scrollBy scrollTo Select self setInterval setTimeout
+            shift slice splice status statusbar stop String Submit sun taint
+            Text Textarea toolbar top toString unescape unshift untaint unwatch
+            valueOf watch window Window write
+        </start>
+      <end type="char"><chargroup id="keyword-end"/></end>
+    </region>
+
+    <region id="identifier">
+      <start type="char"><chargroup id="identifier-start"/></start>
+      <end type="char"><chargroup id="identifier-end"/></end>
+    </region>
+
+    <region id="number">
+        <!-- Well, could be more precise with a regex -->
+      <start type="char"><chargroup id="numeric-constant-start"/></start>
+      <end type="char"><chargroup id="numeric-constant-end"/></end>
+    </region>
+
+    <region id="multiline-comment">
+      <start type="string">/*</start>
+      <end type="string" opts="included">*/</end>
+    </region>
+
+    <region id="singleline-comment">
+      <start type="string">//</start>
+      <end type="regex">\r?\n</end>
+    </region>
+
+    <region id="escape-sequence">
+      <start type="regex">\\u([0-9a-fA-F]{4})|\\.</start>
+    </region>
+
+    <region id="double-quoted" contains="escape-sequence,single-quoted">
+      <start type="char">\&quot;</start>
+      <end type="char" opts="included">\&quot;</end>
+    </region>
+
+    <region id="single-quoted" contains="escape-sequence,double-quoted">
+      <start type="char">\&apos;</start>
+      <end type="char" opts="included">\&apos;</end>
+    </region>
+  </lang>
+
+
+
+  <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+  <!--                           XML code                           -->
+  <lang id="xml">
+
+    <region id="multiline-comment">
+      <start type="string">&lt;!--</start>
+      <end type="string" opts="included">--&gt;</end>
+    </region>
+
+    <region id="unparsed-cdata">
+      <start type="string">&lt;![CDATA[</start>
+      <end type="string" opts="included">]]&gt;</end>
+    </region>
+
+    <region id="directive" contains="double-quoted,single-quoted">
+      <start type="string">&lt;!</start>
+      <end type="char" opts="included">&gt;</end>
+    </region>
+
+    <region id="processing-instr" contains="double-quoted,single-quoted">
+      <start type="string">&lt;?</start>
+      <end type="string" opts="included">?&gt;</end>
+    </region>
+
+    <region id="element" contains="attribute,double-quoted,single-quoted">
+      <start type="char">&lt;</start>
+      <end type="char" opts="included">&gt;</end>
+    </region>
+
+    <region id="attribute" type="subregion">
+      <start type="regex">\s\w+(?=\s*=?)</start>
+    </region>
+
+    <region id="entity">
+      <start type="char">&amp;</start>
+      <end type="char" opts="included">;</end>
+    </region>
+
+    <region id="double-quoted" contains="single-quoted">
+      <start type="char">\&quot;</start>
+      <end type="char" opts="included">\&quot;</end>
+    </region>
+
+    <region id="single-quoted" contains="double-quoted">
+      <start type="char">\&apos;</start>
+      <end type="char" opts="included">\&apos;</end>
+    </region>
+  </lang>
+
+
+  <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+  <!--                          HTML code                           -->
+  <lang id="html">
+
+    <region id="multiline-comment">
+      <start type="string">&lt;!--</start>
+      <end type="string" opts="included">--&gt;</end>
+    </region>
+
+    <region id="unparsed-cdata">
+      <start type="string">&lt;![CDATA[</start>
+      <end type="string" opts="included">]]&gt;</end>
+    </region>
+
+    <region id="directive" contains="double-quoted,single-quoted">
+      <start type="string">&lt;!</start>
+      <end type="char" opts="included">&gt;</end>
+    </region>
+    
+    <region id="phpscript" contains="php">
+      <start type="string">&lt;?php</start>
+      <end type="string" opts="included">?&gt;</end>
+    </region>
+
+    <region id="processing-instr" contains="double-quoted,single-quoted">
+      <start type="string">&lt;?</start>
+      <end type="string" opts="included">?&gt;</end>
+    </region>
+
+    <region id="jscript" contains="js">
+      <start type="regex">(?&lt;=&lt;script[^&gt;]{0,64}[^/]&gt;)</start>
+      <end type="string">&lt;/script&gt;</end>
+    </region>
+
+    <region id="style" contains="css">
+      <start type="regex">(?&lt;=&lt;style[^&gt;]{0,64}[^/]&gt;)</start>
+      <end type="string">&lt;/style&gt;</end>
+    </region>
+
+    <region id="element" contains="attribute,double-quoted,single-quoted">
+        <!-- <start type="regex">&lt;[^&lt;&gt;]+&gt;</start> -->
+      <start type="char">&lt;</start>
+      <end type="char" opts="included">&gt;</end>
+    </region>
+
+    <region id="attribute" type="subregion">
+      <start type="regex">\s\w+(?=\s*=?)</start>
+    </region>
+
+    <region id="entity">
+      <start type="char">&amp;</start>
+      <end type="char" opts="included">;</end>
+    </region>
+
+    <region id="double-quoted" contains="single-quoted">
+      <start type="char">\&quot;</start>
+      <end type="char" opts="included">\&quot;</end>
+    </region>
+
+    <region id="single-quoted" contains="double-quoted">
+      <start type="char">\&apos;</start>
+      <end type="char" opts="included">\&apos;</end>
+    </region>
+  </lang>
+
+
+  <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+  <!--                           CSS code                           -->
+  <lang id="css">
+
+    <region id="block" contains="attribute,value,multiline-comment">
+      <start type="char">{</start>
+      <end type="char" opts="included">}</end>
+    </region>
+
+    <region id="multiline-comment">
+      <start type="string">/*</start>
+      <end type="string" opts="included">*/</end>
+    </region>
+
+    <region id="attribute" type="subregion">
+      <start type="keyword">
+            azimuth background background-attachment background-color
+            background-image background-position background-repeat
+            border border-bottom border-bottom-color border-bottom-style
+            border-bottom-width border-collapse border-color border-left
+            border-left-color border-left-style border-left-width
+            border-right border-right-color border-right-style
+            border-right-width border-spacing border-style border-top
+            border-top-color border-top-style border-top-width
+            border-width bottom caption-side clear clip color content
+            counter-increment counter-reset cue cue-after cue-before
+            cursor direction display elevation empty-cells float font
+            font-family font-size font-size-adjust font-stretch
+            font-style font-variant font-weight height left
+            letter-spacing line-height list-style list-style-image
+            list-style-position list-style-type margin margin-bottom
+            margin-left margin-right margin-top marker-offset marks
+            max-height max-width min-height min-width orphans outline
+            outline-color outline-style outline-width overflow padding
+            padding-bottom padding-left padding-right padding-top page
+            page-break-after page-break-before page-break-inside pause
+            pause-after pause-before pitch pitch-range play-during
+            position quotes richness right size speak speak-header
+            speak-numeral speak-ponctuation speech-rate stress
+            table-layout text-align text-decoration text-indent
+            text-shadow text-transform top unicode-bidi vertical-align
+            visibility voice-family volume white-space widows width
+            word-spacing z-index
+        </start>
+      <end type="char"><chargroup id="xml-identifier-end"/></end>
+    </region>
+
+    <region id="value" contains="single-quoted,multiline-comment" type="subregion">
+      <start type="char">:</start>
+      <end type="char">; }</end>
+    </region>
+
+    <region id="class">
+      <start type="char">.</start>
+      <end type="char"><chargroup id="xml-identifier-end"/></end>
+    </region>
+
+    <region id="id">
+      <start type="char">#</start>
+      <end type="char"><chargroup id="xml-identifier-end"/></end>
+    </region>
+
+    <region id="identifier">
+      <start type="char"><chargroup id="identifier-start"/></start>
+      <end type="char"><chargroup id="xml-identifier-end"/></end>
+    </region>
+
+    <region id="single-quoted" type="subregion">
+      <start type="char">\&apos;</start>
+      <end type="char" opts="included">\&apos;</end>
+    </region>
+  </lang>
+
+
+  <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+  <!--                         PHP scripts                          -->
+  <lang id="php">
+
+    <region id="keyword">
+      <start type="keyword">
+            and or xor array as break case
+            class const continue declare default
+            die do echo else elseif
+            empty enddeclare endfor endforeach endif
+            endswitch endwhile eval exit extends
+            for foreach function global if
+            isset list new print return static
+            switch unset use var while
+            __FILE__ __LINE__ __FUNCTION__ __CLASS__ __METHOD__
+        </start>
+    </region>
+
+    <region id="extkeyword">
+      <start type="keyword">
+            php_user_filter interface implements instanceof
+            public private protected abstract clone
+            exception try catch throw this final
+            __DIR__ __NAMESPACE__ namespace goto
+        </start>
+      <end type="char"><chargroup id="keyword-end"/></end>
+    </region>
+
+    <region id="directive" contains="single-quoted,double-quoted,multiline-comment,singleline-comment">
+      <start type="regex">
+            (include|include_once|require|require_once)
+        </start>
+      <end type="regex">\r?\n</end>
+    </region>
+
+    <region id="variable">
+      <start type="char">$</start>
+      <end type="char"><chargroup id="identifier-end"/></end>
+    </region>
+
+    <region id="identifier">
+      <start type="char"><chargroup id="identifier-start"/></start>
+      <end type="char"><chargroup id="identifier-end"/></end>
+    </region>
+
+    <region id="number">
+        <!-- Well, could be more precise with a regex
+      <start type="regex">(((0[xXbBoO])?[0-9a-fA-F]+[uUlL]?)|(([0-9]+)?\.)?[0-9]+([eE][-+]?[0-9]+)?)</start>
+        -->
+      <start type="char"><chargroup id="numeric-constant-start"/></start>
+      <end type="char"><chargroup id="numeric-constant-end"/></end>
+    </region>
+
+    <region id="multiline-comment">
+      <start type="string">/*</start>
+      <end type="string" opts="included">*/</end>
+    </region>
+
+    <region id="singleline-comment">
+      <start type="string">//</start>
+      <end type="regex">\r?\n</end>
+    </region>
+
+    <region id="escape-sequence">
+      <start type="regex">\\u([0-9a-fA-F]{4})|\\x([0-9a-fA-F]{2})|\\([0-7]{3})|\\.</start>
+    </region>
+
+    <region id="double-quoted" contains="escape-sequence,single-quoted">
+      <start type="char">\&quot;</start>
+      <end type="char" opts="included">\&quot;</end>
+    </region>
+
+    <region id="single-quoted" contains="escape-sequence,double-quoted">
+      <start type="char">\&apos;</start>
+      <end type="char" opts="included">\&apos;</end>
+    </region>
+  </lang>
+
+
+  <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+  <!--                      TeX/LaTeX sources                       -->
+  <lang id="tex">
+
+    <region id="special" contains="opt-argument,argument,line-comment">
+      <start type="regex">
+            \\(begin|end|section|subsection|subsubsection|newcommand|def)
+        </start>
+      <end type="regex">\r?\n</end>
+    </region>
+
+    <region id="macro" contains="opt-argument,argument">
+      <start type="regex">\\\w+</start>
+      <end type="regex">(?&lt;=[\]\}\\\s])[^\[\{]</end>
+    </region>
+
+    <region id="line-comment">
+      <start type="char">%</start>
+      <end type="regex">\r?\n</end>
+    </region>
+
+    <region id="opt-argument" type="subregion" contains="macro">
+      <start type="char">[</start>
+      <end type="char" opts="included">]</end>
+    </region>
+
+    <region id="argument" type="subregion" contains="macro">
+      <start type="char">{</start>
+      <end type="char" opts="included">}</end>
+    </region>
+  </lang>
+
+  <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+  <!--                        Python sources                        -->
+  <lang id="py">
+
+    <region id="directive" contains="keyword,identifier">
+      <start type="string">from</start>
+      <end type="regex">\r?\n</end>
+    </region>
+
+    <region id="keyword">
+      <start type="keyword">
+            and       del      for     is      raise
+            assert    elif     from    lambda  return
+            break     else     global  not     try
+            class     except   if      or      while
+            continue  exec     import  pass    yield
+            def       finally  in      print
+        </start>
+      <end type="char"><chargroup id="keyword-end"/></end>
+    </region>
+
+    <region id="special">
+      <start type="regex">(_\*|__\*|__\*__)</start>
+    </region>
+
+    <region id="extkeyword">
+      <start type="keyword">
+            string
+        </start>
+      <end type="char"><chargroup id="keyword-end"/></end>
+    </region>
+
+    <region id="identifier">
+      <start type="char"><chargroup id="identifier-start"/></start>
+      <end type="char"><chargroup id="identifier-end"/></end>
+    </region>
+
+    <region id="line-comment">
+      <start type="char">#</start>
+      <end type="regex">\r?\n</end>
+    </region>
+
+    <region id="number">
+      <start type="regex">(((0[xXbBoO])?[0-9a-fA-F]+[lL]?)|(([0-9]+)?\.)?[0-9]+([eE][-+]?[0-9]+)?)</start>
+    </region>
+
+    <region id="escape-sequence">
+      <start type="regex">\\U([0-9a-fA-F]{8})|\\u([0-9a-fA-F]{4})|\\x([0-9a-fA-F]{2})|\\([0-7]{3})|\\.</start>
+    </region>
+
+    <region id="double-quoted" contains="escape-sequence,single-quoted">
+      <start type="char">\&quot;</start>
+      <end type="char" opts="included">\&quot;</end>
+    </region>
+
+    <region id="single-quoted" contains="escape-sequence,double-quoted">
+      <start type="char">\&apos;</start>
+      <end type="char" opts="included">\&apos;</end>
+    </region>
+  </lang>
+
+
+  <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+  <!--                  DOS/Windows batch scripts                   -->
+  <lang id="bat">
+
+    <region id="line-comment">
+      <start type="string" opts="case-insensitive">rem</start>
+      <end type="regex">\r?\n</end>
+    </region>
+
+    <region id="keyword">
+      <start type="keyword" opts="case-insensitive">
+            title set if else exist errorlevel for in do
+            break call copy chcp cd chdir choice cls
+            country ctty date del erase dir echo exit
+            goto loadfix loadhigh mkdir md move path
+            pause prompt rename ren rmdir rd shift
+            time type ver verify vol com con lpt nul
+            defined not errorlevel cmdextversion
+            setlocal
+        </start>
+    </region>
+
+    <region id="variable">
+      <start type="regex">\%\w+\%</start>
+    </region>
+
+    <region id="label">
+      <start type="regex">[\r\n]\s*[^\w:]:\w+</start>
+      <end type="regex">\r?\n</end>
+    </region>
+
+    <region id="double-quoted" contains="variable">
+      <start type="char">\&quot;</start>
+      <end type="char" opts="included">\&quot;</end>
+    </region>
+
+    <region id="identifier">
+      <start type="char"><chargroup id="identifier-start"/></start>
+      <end type="char"><chargroup id="identifier-end"/></end>
+    </region>
+  </lang>
+
+</src2xml-config>

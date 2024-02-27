@@ -1,0 +1,12 @@
+*.class
+
+*.jar
+*.war
+*.ear
+
+# NetBeans specific
+nbproject/private/
+build/
+nbbuild/
+#dist/
+nbdist/
